@@ -79,8 +79,8 @@ function Get-IOCs {
     #Create my custom IOC object
     $IOCs = [pscustomobject]@{
         IP = $InputFile | Select-String -Pattern $IPPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
-        URLs = InputFile | Select-String -Pattern $URLPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
-        Hashes = InputFile | Select-String -Pattern $HashPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
+        URLs = $InputFile | Select-String -Pattern $URLPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
+        Hashes = $InputFile | Select-String -Pattern $HashPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
     }# Close IOC Object
 
     # Create the output object
