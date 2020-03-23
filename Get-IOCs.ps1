@@ -77,7 +77,7 @@ function Get-IOCs {
     $InputFile = Get-Content $FileBrowser.FileName
 
     #Create my custom IOC object
-    $IOCs = [pscustomobject]@{
+    $IOCs = [PSObject]@{
         IP = $InputFile | Select-String -Pattern $IPPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
         URLs = $InputFile | Select-String -Pattern $URLPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
         Hashes = $InputFile | Select-String -Pattern $HashPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
@@ -97,7 +97,7 @@ function Get-IOCs {
         }# Close Switch Block
 
         # Builds the ZeekOutPut Object
-        foreach ($value in $IOC.$key){
+        foreach ($value in $IOCs.$key){
             $ZeekOutPut += New-Object -TypeName psobject -Property @{Value = $value; IndicatorType = $IndicatorType; IndicatorSource = $IndicatorSource; MetaDoNotice = $MetaDoNotice}
         }# Close IOC Value Foreach block
     }# Close IOC Key Foreach block
