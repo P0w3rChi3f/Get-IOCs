@@ -28,7 +28,10 @@ function Get-IOCs {
         This parameter defaults to (\b[A-F-0-9]{32}\b)|(\b[A-F-0-9]{40}\b)|(\b[A-F-0-9]{64}\b)|(\b[A-F-0-9]{96}\b)|(\b[A-F-0-9]{128}\b)|(\b[A-F-0-9]{192}\b)|(\b[A-F-0-9]{256}\b)    You have the flexability to change it to any known hash value you wish to look for.
 
     .PARAMETER IPPattern
-        This parameter defaults to (?:(?:\d|[01]?\d\d|2[0-4]\d|25[0-5])\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d|\d)(?:\/\d{1,2})?    It only searches for IPv4 addresses, but gives you the flexability to add an IPv6 regex or specify a single IP.
+        This parameter defaults to (?:(?:\d|[01]?\d\d|2[0-4]\d|25[0-5])\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d|\d)(?:\/\d{1,2})?    It only searches for IPv4 addresses, but gives you the flexability to add an IPv6 regex or specify a single IP. 
+
+    .PARAMETER Outpath
+        You can change the path location of the output file
 
     .EXAMPLE
         Get-IOCs
@@ -64,7 +67,20 @@ function Get-IOCs {
 
         [Parameter()]
         [String]
-        $IPPattern = '(?:(?:\d|[01]?\d\d|2[0-4]\d|25[0-5])\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d|\d)(?:\/\d{1,2})?'
+        $IPPattern = '(?:(?:\d|[01]?\d\d|2[0-4]\d|25[0-5])\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d|\d)(?:\/\d{1,2})?',
+
+        [Parameter()]
+        [String]
+        $DatePattern = '\d{6}Z\s(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May?|June?|July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s(?:19|20)?(?:9[0-9]|2[0-9]|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May?|June?|July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s?(\d{2}).\s([19|20][0-9]\d{2})',
+
+        [Parameter()]
+        [String]
+        $filename = "ZeekIntelFrameworkFile.tsv",
+
+        [Parameter()]
+        [String]
+        $OutPath = "$env:USERPROFILE\Documents"
+
     )# Close Parameter Block
 
     # Create a file browser input box and creae my file variable
@@ -76,6 +92,8 @@ function Get-IOCs {
     $FileBrowser.ShowDialog()
     $InputFile = Get-Content $FileBrowser.FileName
 
+    $OutPutFile = $OutPath + $filename
+
     #Create my custom IOC object
     $IOCs = [PSObject]@{
         IP = $InputFile | Select-String -Pattern $IPPattern -AllMatches | Select-Object -Expand Matches | Select-Object -Expand Value
@@ -85,7 +103,9 @@ function Get-IOCs {
 
     # Create the output object
     $IndicatorSource = $InputFile[0].PSChildName
+    $Date = $InputFile | Select-String -Pattern $DatePattern | Select-Object -ExpandProperty Matches | Select-Object -ExpandProperty Value | Select-First 1
     $MetaDoNotice = "T"
+
     $ZeekOutPut = @()
 
     foreach ($key in $IOCs.keys) {
@@ -98,12 +118,14 @@ function Get-IOCs {
 
         # Builds the ZeekOutPut Object
         foreach ($value in $IOCs.$key){
-            $ZeekOutPut += New-Object -TypeName psobject -Property @{Value = $value; IndicatorType = $IndicatorType; IndicatorSource = $IndicatorSource; MetaDoNotice = $MetaDoNotice}
+            $ZeekOutPut += New-Object -TypeName psobject -Property @{Value = $value; IndicatorType = $IndicatorType; IndicatorSource = $IndicatorSource; MetaDoNotice = $MetaDoNotice; Date = $Date}
         }# Close IOC Value Foreach block
     }# Close IOC Key Foreach block
 
     #Output the Zeek file
-    $ZeekOutPut | Select-Object Value, IndicatorType, IndicatorSource, MetaDoNotice | Export-Csv -Delimiter "`t" $env:USERPROFILE\Documents\ZeekIntelFrameworkFile.tsv -NoTypeInformation
+    $ZeekOutPut | Select-Object '#fields_indicator', Value, IndicatorType, IndicatorSource, MetaDoNotice , Date | Export-Csv -Delimiter "`t" $OutPutFile -NoTypeInformation
+
+    (Get-Content $OutPutFile) | ForEach-Object {$_ -replace '"', ''} | Out-File $OutPutFile -Force -Encoding ascii
     
 }# Close IOC Function
 
